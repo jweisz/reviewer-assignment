@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from numpy.random import default_rng
 import argparse
+import csv
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create reviewing assignments')
@@ -14,8 +15,15 @@ if __name__ == '__main__':
     for r in all_reviewers:
         reviewer_counts[r] = 0
 
-    with open('submissions.txt') as f:
-        submissions = f.read().splitlines()
+    submissions = []
+    submitters = {}
+    with open('submissions.csv') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        for row in reader:
+            submission = row[0]
+            submitter = row[1]
+            submissions.append(submission)
+            submitters[submission] = submitter
 
     rng = default_rng()
 
@@ -30,6 +38,15 @@ if __name__ == '__main__':
         # reviewer probabilities
         m = max(reviewer_counts.values())
         p = [m - v + 1 for v in reviewer_counts.values()]
+        
+        # if there's a conflict, set the prob to 0 so it's not assigned
+        try:
+            i = list(reviewer_counts.keys()).index(submitters[s])
+            p[i] = 0
+        except ValueError:
+            pass
+
+        # normalize to 1
         probs = [v / sum(p) for v in p]
         
         # pick reviewers

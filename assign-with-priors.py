@@ -20,8 +20,15 @@ if __name__ == '__main__':
         for row in reader:
             reviewer_counts[row[0]] = int(row[1])
 
-    with open('submissions.txt') as f:
-        submissions = f.read().splitlines()
+    submissions = []
+    submitters = {}
+    with open('submissions.csv') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        for row in reader:
+            submission = row[0]
+            submitter = row[1]
+            submissions.append(submission)
+            submitters[submission] = submitter
 
     rng = default_rng()
 
@@ -35,8 +42,17 @@ if __name__ == '__main__':
         # reviewer probabilities
         m = max(reviewer_counts.values())
         p = [m - v + 1 for v in reviewer_counts.values()]
-        probs = [v / sum(p) for v in p]
         
+        # if there's a conflict, set the prob to 0 so it's not assigned
+        try:
+            i = list(reviewer_counts.keys()).index(submitters[s])
+            p[i] = 0
+        except ValueError:
+            pass
+
+        # normalize to 1
+        probs = [v / sum(p) for v in p]
+
         # pick reviewers
         reviewers = rng.choice(list(reviewer_counts.keys()), size=args.n, replace=False, p=probs)
         assignments[s] = reviewers
